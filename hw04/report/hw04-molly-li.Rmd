@@ -1,0 +1,262 @@
+---
+title: "hw04-molly-li"
+author: "Molly Li"
+date: "4/4/2018"
+output: github_document
+---
+
+```{r}
+#stuff from r script
+library(XML)
+library(stringr)
+
+
+tbl_html <- readHTMLTable('http://cran.r-project.org/src/contrib/Archive/stringr')
+tbl_html
+
+
+
+#remove NA
+tbl_html$`NULL`
+df <- tbl_html$`NULL`
+dat <- na.omit(df)[-1,]
+
+
+#1.1) read archive
+read_archive <- function(x){
+  a <- str_replace('http://cran.r-project.org/src/contrib/Archive/stringr', "stringr", x)
+  b <- readHTMLTable(a)
+  c <- b$`NULL`
+  d <- na.omit(c)[-1,]
+  return(d)
+}
+
+raw_data <- read_archive('stringr')
+raw_data
+
+
+#1.2 Data Cleaning
+
+version_names <- function (x) {
+  name1 <- str_split(read_archive(x)$Name, pattern = "_")
+  name2 <- lapply(name1, function(x) x[1])
+  name3 <- as.character(unlist(name2))
+  return(name3)
+}
+
+version_names('stringr')
+
+version_numbers <- function(x) {
+  name1 <- str_split(read_archive(x)$Name, pattern = "_")
+  number1 <- lapply(name1, function(x) x[2])
+  number2 <- str_sub(number1, start = 1, end = -8)
+  return(number2)
+}
+version_numbers('stringr')
+
+version_dates <- function(x) {
+  date1 <- str_sub(read_archive(x)$"Last modified", start = 1, end = 10)
+  date2 <- as.Date(date1)
+  return(date2)
+}
+version_dates('stringr')
+
+version_sizes <- function(x) {
+  size1 <- which(str_detect(read_archive(x)$Size, "M"))
+  size2 <- as.numeric(str_replace(read_archive(x)$Size, 'M|K', ''))
+  size2[size1] <- size2[size1]*1024
+  return(size2)
+}
+version_sizes('stringr')
+
+clean_archive <- function(x) {
+  name <- version_names(x)
+  version <- version_numbers(x)
+  date <- version_dates(x)
+  size <- version_sizes(x)
+  clean1 <- data.frame(name, version, date, size)
+  return(clean1)
+}
+
+clean_data <- clean_archive("stringr")
+clean_data
+
+# 1.3) Timeline plot
+# write a function plot_archive() to visualize the timeline with the version sizes of a package.
+library(ggplot2)
+plot_archive <- function(x) {
+  ggplot(data = x, mapping = aes(date, size, group = 1)) +
+    geom_point(aes(date, size, col = "steelblue2")) +
+    geom_step(aes(date, size, col = "steelblue2")) +
+    ggtitle(paste0(x$name[1],': timeline of version sizes')) +
+    xlab('date') +
+    ylab('Size(kilotypes)')
+}
+plot_archive(clean_data)
+```
+
+
+```{r}
+library(ggplot2)
+```
+
+# 1.4) Archive of "stringr"
+```{r}
+raw_data <- read_archive('stringr')
+clean_data <- clean_archive('stringr')
+
+plot_archive(clean_data)
+```
+
+# 1.5) Archives of "splyr", "ggplot2", "XML", and "knitr"
+```{r}
+clean_data2 <- clean_archive('ggplot2')
+clean_data2
+write.csv(clean_data2, file = '../data/ggplot2-archive.csv')
+
+clean_data3 <- clean_archive('XML')
+clean_data3
+write.csv(clean_data3, file = '../data/XML-archive.csv')
+
+clean_data4 <- clean_archive('knitr')
+clean_data4
+write.csv(clean_data4, file = '../data/knitr-archive.csv')
+
+clean_data5 <- clean_archive('dplyr')
+clean_data5
+write.csv(clean_data5, file = '../data/dplyr-archive.csv')
+
+df <- rbind(clean_data2, clean_data3, clean_data4, clean_data5)
+df
+
+```
+
+```{r}
+ggplot(data=df)+
+  geom_step(aes(x=date, y=size, color=name))+
+  xlab("date")+
+  ylab("Size(Kilotypes)")
+```
+
+
+
+```{r}
+ggplot(data=df)+
+  geom_step(aes(x=date, y=size, color=name))+
+  xlab("date")+
+  ylab("Size(Kilotypes)")+
+  facet_wrap(~name, scales = "free")
+
+```
+
+
+
+##3) Data “Emotion in Text”
+#3.1) Number of characters per tweet
+```{r}
+URL <- "https://raw.githubusercontent.com/ucb-stat133/stat133-spring-2018/master/data/text-emotion.csv"
+download.file(URL, "../data/text-emotion.csv")
+```
+
+```{r}
+text_emotion <- read.csv("../data/text-emotion.csv",stringsAsFactors = F)
+```
+
+```{r}
+word_count <- nchar(text_emotion$content)
+frequency_wc<- table(word_count)
+summary(word_count)
+hist(word_count,breaks = seq(0,175,5) , xlim = c(0,175), main = "Histogram of frequency~twitter_word_count",xlab = "twitter_word_count")
+```
+
+
+#3.2) Number of Mentions
+```{r}
+number_of_mentions <- rep(0, length(text_emotion$content))
+k <- strsplit(text_emotion$content, " ")
+for (i in 1:length(text_emotion$content)) {
+  for (j in 1:length(k[[i]])) {
+    if (length(split_chars(k[[i]][j])) >= 2){
+      if (split_chars(k[[i]][j])[1] == "@") {
+        if (!FALSE %in% (split_chars(k[[i]][j])[-1] %in% c(letters, toupper(letters), 1:9))){
+          number_of_mentions[i] = number_of_mentions[i] + 1
+        }
+      }
+    }
+  }
+}
+
+table(number_of_mentions)
+```
+
+```{r}
+#Frequencies of mentions
+barplot(table(number_of_mentions), xlab = "times", main = "Frequencies of mentions")
+```
+
+```{r}
+text_emotion$content[ number_of_mentions == 10]
+```
+
+
+#3.3)Hashtags
+```{r}
+tags = NULL
+number_of_hash <- rep(0, length(text_emotion$content))
+k <- strsplit(text_emotion$content, " ")
+for (i in 1:length(text_emotion$content)) {
+  for (j in 1:length(k[[i]])) {
+    if (length(split_chars(k[[i]][j])) >= 2){
+      if (split_chars(k[[i]][j])[1] == "#") {
+        if (!FALSE %in% (split_chars(k[[i]][j])[-1] %in% c(letters, toupper(letters), 1:9, " "))){
+          if (TRUE %in% (c(letters, toupper(letters)) %in% split_chars(k[[i]][j])[-1])) {
+          number_of_hash[i] = number_of_hash[i] + 1
+          tags = append(tags, k[[i]][j])
+          }
+        }
+      }
+    }
+  }
+}
+
+
+#count the number of hashtags 
+sum(number_of_hash)
+
+```
+
+
+
+```{r}
+# numbero of hastag
+table(number_of_hash)
+```
+
+```{r}
+#barpolot
+
+barplot(table(number_of_hash), main = "Numbers of Hashtages")
+```
+
+```{r}
+#average length of hashta
+tl <- rep(0, length(tags))
+for (i in 1:length(tags)) { 
+  tl[i] = length(strsplit(tags, "")[[i]])
+}
+
+mean(tl)
+```
+
+
+```{r}
+#the mode of hashtags
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+getmode(tl)
+```
+
+
