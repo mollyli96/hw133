@@ -1,0 +1,226 @@
+---
+title: "hw05-molly-li"
+author: "Molly Li"
+date: "4/25/2018"
+output: github_document
+---
+
+
+
+The purpose of this assignment is to create an R package that implements functions for simulating rolling a die. And then use the package to approximate probabilities to the famous Chevalier De Mere’s dice problems.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+The goal is to program two classes of objects: a regular "die" with six sides, and an object "roll" (i.e. the rolls of a "die").
+
+1) Object "die"
+```{r}
+check_sides <- function(sides = c(1,2,3,4,5,6)){
+  if(length(sides) != 6){stop("\n'object' must be of sides of 6")}
+  return('TRUE')
+}
+
+check_prob <- function(prob = rep(1/6,6)){
+  if(length(prob) != 6 | !is.numeric(prob) ){stop("\n 'probability' must be a numeric vector of length 6") }
+  if(any(prob) < 0 | any(prob > 1)){stop("\n value of 'probability' must be inbetween 0 and 1")}
+  if(sum(prob) != 1){stop("\n 'probability' must add up to 1")}
+  return("TRUE")
+}
+ 
+die <- function(sides = c(1,2,3,4,5,6), prob = rep(1/6,6)){
+  check_sides(sides)
+  check_prob(prob)
+  res <- list(side = sides, prob = prob)
+  class(res) <- "die"
+  return(res)
+}
+
+print.die<- function(x){
+  cat('object "die" \n\n')
+  cd <- data.frame(
+    side = x$side, prob = x$prob)
+  print(cd)
+}
+
+die()
+```
+
+```{r}
+weird_die <- die(sides = c('i', 'ii', 'iii', 'iv', 'v', 'vi')) 
+loaded_die <- die(prob = c(0.075, 0.1, 0.125, 0.15, 0.20, 0.35))
+bad_die <- die(sides = c('a', 'b', 'c', 'd', 'e'))
+```
+
+```{r}
+bad_die1 <- die(sides = c('a', 'b', 'c', 'd', 'e', 'f'), prob = c(0.2, 0.1, 0.1, 0.1, 0.5, 0.1))
+```
+
+2) Object "roll"
+```{r}
+check_times <- function(x){
+  if(x %% 1 != 0 |x < 0 ){stop(" 'times' must be a positive integer")}
+  FALSE
+}
+
+roll <- function(die, times =1){
+  check_times(times)
+  rolls <- sample(die$side, size = times, replace = TRUE, prob = die$prob)
+  abc <- list(rolls = rolls, sides = die$side, prob = die$prob, total = times )
+  class(abc) <- "roll"
+  return(abc)
+}
+
+print.roll <- function(x){
+  cat("object 'roll' \n\n")
+  print(x$rolls)
+}
+```
+
+```{r}
+fair_die <- die() 
+set.seed(123)
+fair50 <- roll(fair_die, times = 50) 
+fair50
+```
+
+```{r}
+names(fair50)
+fair50$rolls
+fair50$sides
+fair50$prob
+fair50$total
+```
+
+```{r}
+ # string die
+str_die <- die(
+sides = c('a', 'b', 'c', 'd', 'e', 'f'),
+prob = c(0.075, 0.1, 0.125, 0.15, 0.20, 0.35))
+# roll 20 times
+set.seed(123)
+str_rolls <- roll(str_die, times = 20) 
+names(str_rolls)
+str_rolls
+```
+
+
+3) Summary method for "roll" objects
+```{r}
+summary.roll <- function(x){
+  freqs <- data.frame(
+  side = x$sides,
+  count = as.vector(table(x$rolls)),
+  prop = as.vector(table(x$rolls))/x$total
+  )
+  obj <- list(freqs = freqs) 
+  class(obj) <- "summary.roll"
+  return(obj)
+}
+
+print.summary.roll <- function(x){
+  cat("summary 'roll' \n\n")
+  print(x$freqs)
+}
+```
+
+```{r}
+set.seed(123)
+fair_50rolls <- roll(fair_die, times = 50) 
+fair50_sum <- summary(fair_50rolls)
+fair50_sum
+```
+
+```{r}
+ # what's in the summary
+class(fair50_sum)
+```
+
+```{r}
+names(fair50_sum)
+fair50_sum$freqs
+```
+
+4) Plot methd for "roll" objects
+Write a plot method for "roll" objects—i.e. plot.roll(). You need to graph a barchart of frequencies (relative frequencies of 1’s, 2’s, 3’s, 4’s, 5’s, and 6’s). Use barplot() to implement this method.
+```{r}
+plot.roll <- function(x){
+  height <- as.vector(table(x$rolls))/x$total
+  name <- x$sides
+  title <- paste0("Frequencies in a series of", x$total, 'die rolls')
+  return(barplot(height = height, names.arg = name,xlab = 'sides of die', ylab = "relative frequencies",main = title))
+}
+
+```
+
+```{r}
+ # plot method
+plot(fair_50rolls)
+```
+
+5) Additional Methods
+Also, write functions for the following methods:
+• an extraction method "[" to extract the value of a given roll.
+• a replacement method "[<-" to replace the value of a given roll.
+• an addition "+" method to add more rolls.
+```{r}
+"[.roll" <- function(x, i){
+  if(!is.numeric(i)|i == 0|i> length(x$rolls)){stop("i is invalid")}
+  x$rolls[i]
+}
+```
+
+```{r}
+"[<-.roll" <- function(x, i, value){
+    if(!is.numeric(i)|i == 0|i> length(x$rolls)){stop("i is invalid")}
+    if(value %in% x$sides == FALSE){stop("value is invalid")}
+    newvector <- x$rolls
+    newvector[i] <- value
+    return(newvector)
+}
+```
+
+```{r}
+set.seed(123)
+fair_die <- die()
+fair500 <- roll(fair_die, times = 500)
+fair500[500] <- 4
+fair500
+```
+
+
+#De Mere's problem
+###Problem I
+```{r}
+Game1 <- function(x) {
+  win = 0
+  for (i in 1:x) {
+  if (6 %in% roll(die(), 4)$rolls) {
+    win = win + 1
+  }}
+  return(win/x)
+}
+Game1(1000)
+1-(5/6)^4
+```
+
+###Problem II
+```{r}
+Game2 <- function(x) {
+  win = 0
+  kk = 0
+  for (i in 1:x) {
+    for (j in 1:24) {
+   rollpair <- roll(die(), 2)  
+    kk[j] = sum(rollpair$rolls == 6)
+    }
+    if (2 %in% kk) {
+      win = win + 1
+    }
+  }
+  return(win/x)
+}
+Game2(1000)
+1-(35/36)^24
+```
+
