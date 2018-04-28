@@ -1,0 +1,12 @@
+Package: dieroller
+Type: Package
+Title: Stimulates Rolling a Die
+Version: 0.1.0
+Author: Molly Li
+Maintainer: Molly Li <xuewen.li@berkeley.edu>
+Description: Functions to creat rolling die cases
+    to roll a die multiple times, and to summerize 
+    and visualize frequencies of the rolls.
+License: GPL-2
+Encoding: UTF-8
+LazyData: true

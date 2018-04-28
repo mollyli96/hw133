@@ -1,0 +1,38 @@
+---
+title: "Getting stated with die roll"
+author: "Molly Li"
+date: "4/27/2018"
+output: rmarkdown::html_vignette
+vignette:>
+ %\VignetteIndexEntry:html_vignette{Intro to die roll}
+ %\VignetteEngine{KNitr::rmarkdown}
+ %\VignetteEncoding{UTF-8}
+ 
+---
+
+```{r echo=FALSE, message=FALSE}
+knitr::opts_chunk$set(collapse  = TRUE, comment = "#>")
+library(dieroller)
+```
+
+
+The idea is to write a function die() that takes two arguments, sides and prob, in order to return a "die" object. Here’s an example of the default call to die():
+## object "die"
+# default call: creates a standard fair die
+```{r}
+fair_die <- die() 
+fair_die
+```
+
+
+##2) Object "roll"
+To roll an object "die" you will have to create a roll() function that takes a die and a number times of rolls, and that returns an object of class "rolls". Here’s a basic example for roll():
+```{r}
+fair_die <- die() 
+set.seed(123)
+fair50 <- roll(fair_die, times = 50) 
+fair50
+```
+
+
+
